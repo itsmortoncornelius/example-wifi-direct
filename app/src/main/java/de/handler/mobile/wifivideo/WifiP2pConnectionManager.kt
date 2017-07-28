@@ -98,7 +98,7 @@ class WifiP2pConnectionManager(private val listener: OnDataListener) {
 			try {
 				val socketAddress = InetSocketAddress(inetAddress, 8888)
 				val socket = Socket()
-				socket.bind(socketAddress)
+				socket.bind(null)
 				manager.get()?.socket = socket
 				manager.get()?.socket!!.connect(socketAddress, 2000)
 				return true
