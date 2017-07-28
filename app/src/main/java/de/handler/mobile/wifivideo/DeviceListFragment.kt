@@ -69,7 +69,7 @@ class DeviceListFragment : Fragment() {
 	 * See the Android Training lesson [Communicating with Other Fragments](http://developer.android.com/training/basics/fragments/communicating.html) for more information.
 	 */
 	interface OnListFragmentInteractionListener {
-		fun onListFragmentInteraction(item: WifiP2pDevice)
+		fun onListFragmentInteraction(device: WifiP2pDevice)
 	}
 
 	companion object {

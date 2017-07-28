@@ -10,15 +10,18 @@ import android.net.wifi.p2p.WifiP2pConfig
 import android.net.wifi.p2p.WifiP2pDevice
 import android.net.wifi.p2p.WifiP2pManager
 import android.os.Bundle
+import android.os.Handler
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import android.view.View
+import android.widget.Button
 import android.widget.Toast
 
 
 class MainActivity : AppCompatActivity(), DeviceListFragment.OnListFragmentInteractionListener {
-	override fun onListFragmentInteraction(item: WifiP2pDevice) {
+	override fun onListFragmentInteraction(device: WifiP2pDevice) {
 		val config = WifiP2pConfig()
-		config.deviceAddress = item.deviceAddress
+		config.deviceAddress = device.deviceAddress
 		config.wps.setup = WpsInfo.PBC
 
 		wifiP2pManager.connect(wifiP2pChannel, config, object : WifiP2pManager.ActionListener {
@@ -33,11 +36,12 @@ class MainActivity : AppCompatActivity(), DeviceListFragment.OnListFragmentInter
 			}
 
 			override fun onSuccess() {
-				connectedDevice = item
+				connectedDevice = device
 				Toast.makeText(this@MainActivity, "Devices Connected", Toast.LENGTH_SHORT).show()
 			}
 		})
 	}
+
 
 	private var connectedDevice: WifiP2pDevice? = null
 	private val intentFilter = IntentFilter()
@@ -51,14 +55,24 @@ class MainActivity : AppCompatActivity(), DeviceListFragment.OnListFragmentInter
 	private lateinit var wifiP2pChannel: WifiP2pManager.Channel
 	private lateinit var wifiP2pBroadcastReceiver: WifiP2pBroadcastReceiver
 	private lateinit var wifiP2pDevice: WifiP2pDevice
+	private lateinit var wifiP2pConnectionManager: WifiP2pConnectionManager
+	private lateinit var connectButton: Button
+
 
 	companion object {
 		val TAG_DEVICE_LIST_FRAGMENT: String = "device_list_fragment"
+
 	}
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		setContentView(R.layout.activity_main)
+
+		connectButton = findViewById(R.id.button_connect)
+		connectButton.setOnClickListener({
+			wifiP2pConnectionManager.bindServer()
+			Handler().postDelayed({wifiP2pConnectionManager.sendData(1)}, 2000)
+		})
 
 		//  Indicates a change in the Wi-Fi P2P status.
 		intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION)
@@ -76,6 +90,21 @@ class MainActivity : AppCompatActivity(), DeviceListFragment.OnListFragmentInter
 				.beginTransaction()
 				.replace(R.id.container_fragment, DeviceListFragment.newInstance(), TAG_DEVICE_LIST_FRAGMENT)
 				.commit()
+
+		wifiP2pConnectionManager = WifiP2pConnectionManager(object : WifiP2pConnectionManager.OnDataListener {
+			override fun onServerBound(success: Boolean) {
+				Toast.makeText(this@MainActivity, "${wifiP2pDevice.deviceName} bound server $success", Toast.LENGTH_SHORT).show()
+				wifiP2pConnectionManager.sendData(1)
+			}
+
+			override fun onDataSend(data: Int, success: Boolean) {
+				Toast.makeText(this@MainActivity, "${wifiP2pDevice.deviceName} send $data $success", Toast.LENGTH_SHORT).show()
+			}
+
+			override fun onDataReceived(data: Int) {
+				Toast.makeText(this@MainActivity, "${wifiP2pDevice.deviceName} received $data", Toast.LENGTH_SHORT).show()
+			}
+		})
 	}
 
 	override fun onResume() {
@@ -118,7 +147,18 @@ class MainActivity : AppCompatActivity(), DeviceListFragment.OnListFragmentInter
 				val networkInfo = intent.getParcelableExtra<NetworkInfo>(WifiP2pManager.EXTRA_NETWORK_INFO)
 				if (networkInfo.isConnected) {
 					wifiP2pManager.requestConnectionInfo(wifiP2pChannel, {
-						// wifiP2pInfo ->
+						wifiP2pInfo ->
+						val groupOwner = wifiP2pInfo.isGroupOwner
+						val groupOwnerAddress = wifiP2pInfo.groupOwnerAddress
+						val groupFormed = wifiP2pInfo.groupFormed
+						Log.d("TAG_WIFI_INFO", groupOwner.toString() + " " + groupOwnerAddress.toString() + " " + groupFormed.toString())
+
+						if (groupFormed && groupOwner) {
+							wifiP2pConnectionManager.receiveData(true)
+						} else if (groupFormed) {
+							wifiP2pConnectionManager.init(groupOwnerAddress)
+							connectButton.visibility = View.VISIBLE
+						}
 					})
 				}
 			} else if (WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION == action) {

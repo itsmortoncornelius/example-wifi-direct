@@ -5,4 +5,17 @@
 	android:id="@+id/container_fragment"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
-	tools:context="de.handler.mobile.wifivideo.MainActivity"/>
+	tools:context="de.handler.mobile.wifivideo.MainActivity">
+
+	<Button
+		android:id="@+id/button_connect"
+		android:layout_width="match_parent"
+		android:layout_height="56dp"
+		android:gravity="center"
+		android:layout_gravity="bottom"
+		android:text="@string/text_connect"
+		style="@style/Base.TextAppearance.AppCompat.Button"
+		android:visibility="gone"
+		tools:visibility="visible"/>
+
+</FrameLayout>
