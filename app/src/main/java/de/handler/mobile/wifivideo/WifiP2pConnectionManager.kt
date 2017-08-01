@@ -59,6 +59,7 @@ class WifiP2pConnectionManager(private val listener: OnDataListener) {
 				val dataInputStream = DataInputStream(inputStream)
 				return dataInputStream.readInt()
 			} catch (e: IOException) {
+				Log.e("TAG_RECEIVE_DATA", e.message)
 				return 0
 			}
 		}
@@ -84,6 +85,7 @@ class WifiP2pConnectionManager(private val listener: OnDataListener) {
 				p0[0]?.let { dataOutputStream.writeInt(it) }
 				return true
 			} catch (e: IOException) {
+				Log.e("TAG_SEND_DATA", e.message)
 				return false
 			}
 		}
