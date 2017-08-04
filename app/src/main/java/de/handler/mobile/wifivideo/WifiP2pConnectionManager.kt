@@ -45,6 +45,7 @@ class WifiP2pConnectionManager(private val listener: OnDataListener) {
 			receiveDataTask = ReceiveDataTask(WeakReference(this)).execute()
 		} else if (stop) {
 			receiveDataTask!!.cancel(true)
+			receiveDataTask = null
 		}
 	}
 
@@ -105,7 +106,11 @@ class WifiP2pConnectionManager(private val listener: OnDataListener) {
 			}
 
 			try {
-				val outputStream = manager.get()?.serverSocket?.getOutputStream() ?: return false
+				val serverSocket = manager.get()?.serverSocket
+				if (serverSocket == null || !serverSocket.isConnected) {
+					return false
+				}
+				val outputStream = serverSocket.getOutputStream() ?: return false
 				val dataOutputStream = DataOutputStream(outputStream)
 				p0[0]?.let { dataOutputStream.writeInt(it) }
 				return true
