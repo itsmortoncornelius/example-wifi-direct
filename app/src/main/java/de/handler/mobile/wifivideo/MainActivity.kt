@@ -10,7 +10,6 @@ import android.net.wifi.p2p.WifiP2pConfig
 import android.net.wifi.p2p.WifiP2pDevice
 import android.net.wifi.p2p.WifiP2pManager
 import android.os.Bundle
-import android.os.Handler
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.View
@@ -56,7 +55,7 @@ class MainActivity : AppCompatActivity(), DeviceListFragment.OnListFragmentInter
 	private lateinit var wifiP2pBroadcastReceiver: WifiP2pBroadcastReceiver
 	private lateinit var wifiP2pDevice: WifiP2pDevice
 	private lateinit var wifiP2pConnectionManager: WifiP2pConnectionManager
-	private lateinit var connectButton: Button
+	private lateinit var sendButton: Button
 
 
 	companion object {
@@ -68,10 +67,9 @@ class MainActivity : AppCompatActivity(), DeviceListFragment.OnListFragmentInter
 		super.onCreate(savedInstanceState)
 		setContentView(R.layout.activity_main)
 
-		connectButton = findViewById(R.id.button_connect)
-		connectButton.setOnClickListener({
-			wifiP2pConnectionManager.bindServer()
-			Handler().postDelayed({wifiP2pConnectionManager.sendData(1)}, 2000)
+		sendButton = findViewById(R.id.button_send)
+		sendButton.setOnClickListener({
+			wifiP2pConnectionManager.sendData(1)
 		})
 
 		//  Indicates a change in the Wi-Fi P2P status.
@@ -92,9 +90,13 @@ class MainActivity : AppCompatActivity(), DeviceListFragment.OnListFragmentInter
 				.commit()
 
 		wifiP2pConnectionManager = WifiP2pConnectionManager(object : WifiP2pConnectionManager.OnDataListener {
+			override fun onClientBound(success: Boolean) {
+				Toast.makeText(this@MainActivity, "${wifiP2pDevice.deviceName} bound client $success", Toast.LENGTH_SHORT).show()
+				wifiP2pConnectionManager.receiveData()
+			}
+
 			override fun onServerBound(success: Boolean) {
 				Toast.makeText(this@MainActivity, "${wifiP2pDevice.deviceName} bound server $success", Toast.LENGTH_SHORT).show()
-				wifiP2pConnectionManager.sendData(1)
 			}
 
 			override fun onDataSend(data: Int, success: Boolean) {
@@ -111,6 +113,16 @@ class MainActivity : AppCompatActivity(), DeviceListFragment.OnListFragmentInter
 		super.onResume()
 		wifiP2pBroadcastReceiver = WifiP2pBroadcastReceiver()
 		registerReceiver(wifiP2pBroadcastReceiver, intentFilter)
+		discoverPeers()
+	}
+
+	override fun onPause() {
+		super.onPause()
+		unregisterReceiver(wifiP2pBroadcastReceiver)
+	}
+
+
+	private fun discoverPeers() {
 		wifiP2pManager.discoverPeers(wifiP2pChannel, object : WifiP2pManager.ActionListener {
 			override fun onSuccess() {
 				Log.i("TAG", "success")
@@ -127,11 +139,6 @@ class MainActivity : AppCompatActivity(), DeviceListFragment.OnListFragmentInter
 				Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
 			}
 		})
-	}
-
-	override fun onPause() {
-		super.onPause()
-		unregisterReceiver(wifiP2pBroadcastReceiver)
 	}
 
 
@@ -154,16 +161,26 @@ class MainActivity : AppCompatActivity(), DeviceListFragment.OnListFragmentInter
 						Log.d("TAG_WIFI_INFO", groupOwner.toString() + " " + groupOwnerAddress.toString() + " " + groupFormed.toString())
 
 						if (groupFormed && groupOwner) {
-							wifiP2pConnectionManager.receiveData(true)
+							wifiP2pConnectionManager.bindClient()
 						} else if (groupFormed) {
-							wifiP2pConnectionManager.init(groupOwnerAddress)
-							connectButton.visibility = View.VISIBLE
+							wifiP2pConnectionManager.bindServer(groupOwnerAddress)
+							sendButton.visibility = View.VISIBLE
 						}
 					})
+				} else {
+					reset()
 				}
 			} else if (WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION == action) {
 				wifiP2pDevice = intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_DEVICE)
 			}
 		}
+	}
+
+	private fun reset() {
+		sendButton.visibility = View.GONE
+		connectedDevice = null
+		val fragment = supportFragmentManager.findFragmentByTag(TAG_DEVICE_LIST_FRAGMENT) as DeviceListFragment?
+		fragment?.updateDevices(emptyList())
+		discoverPeers()
 	}
 }

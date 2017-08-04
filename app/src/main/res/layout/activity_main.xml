@@ -8,12 +8,12 @@
 	tools:context="de.handler.mobile.wifivideo.MainActivity">
 
 	<Button
-		android:id="@+id/button_connect"
+		android:id="@+id/button_send"
 		android:layout_width="match_parent"
 		android:layout_height="56dp"
 		android:gravity="center"
 		android:layout_gravity="bottom"
-		android:text="@string/text_connect"
+		android:text="@string/text_send"
 		style="@style/Base.TextAppearance.AppCompat.Button"
 		android:visibility="gone"
 		tools:visibility="visible"/>
