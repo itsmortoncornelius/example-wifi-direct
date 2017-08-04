@@ -49,9 +49,12 @@ class WifiP2pConnectionManager(private val listener: OnDataListener) {
 	}
 
 
-	class BindServerTask(private val manager: WeakReference<WifiP2pConnectionManager>, private val inetAddress: InetAddress) : AsyncTask<Void, Void, Boolean>() {
-		override fun doInBackground(vararg p0: Void): Boolean {
+	class BindServerTask(private val manager: WeakReference<WifiP2pConnectionManager>, private val inetAddress: InetAddress) : AsyncTask<Void, Void, Boolean?>() {
+		override fun doInBackground(vararg p0: Void): Boolean? {
 			try {
+				if (manager.get()?.serverSocket != null && manager.get()?.serverSocket!!.isBound) {
+					return null
+				}
 				val socketAddress = InetSocketAddress(inetAddress, 8888)
 				val socket = Socket()
 				socket.bind(null)
@@ -65,7 +68,9 @@ class WifiP2pConnectionManager(private val listener: OnDataListener) {
 		}
 
 		override fun onPostExecute(result: Boolean?) {
-			manager.get()?.listener?.onServerBound(result ?: false)
+			if (result != null) {
+				manager.get()?.listener?.onServerBound(result)
+			}
 		}
 	}
 

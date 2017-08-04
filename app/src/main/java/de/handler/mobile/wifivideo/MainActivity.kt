@@ -118,6 +118,7 @@ class MainActivity : AppCompatActivity(), DeviceListFragment.OnListFragmentInter
 
 	override fun onPause() {
 		super.onPause()
+		wifiP2pConnectionManager.receiveData(true)
 		unregisterReceiver(wifiP2pBroadcastReceiver)
 	}
 
@@ -147,7 +148,10 @@ class MainActivity : AppCompatActivity(), DeviceListFragment.OnListFragmentInter
 			val action = intent?.action
 			if (WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION == action) {
 				val state = intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE, -1)
-				WifiP2pStateManager.INSTANCE.p2pEnabled = state == WifiP2pManager.WIFI_P2P_STATE_ENABLED
+				val enabled = state == WifiP2pManager.WIFI_P2P_STATE_ENABLED
+				if (!enabled) {
+					reset()
+				}
 			} else if (WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION == action) {
 				wifiP2pManager.requestPeers(wifiP2pChannel, peerListListener)
 			} else if (WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION == action) {
@@ -178,6 +182,7 @@ class MainActivity : AppCompatActivity(), DeviceListFragment.OnListFragmentInter
 
 	private fun reset() {
 		sendButton.visibility = View.GONE
+		wifiP2pConnectionManager.receiveData(true)
 		connectedDevice = null
 		val fragment = supportFragmentManager.findFragmentByTag(TAG_DEVICE_LIST_FRAGMENT) as DeviceListFragment?
 		fragment?.updateDevices(emptyList())
