@@ -120,6 +120,7 @@ class MainActivity : AppCompatActivity(), DeviceListFragment.OnListFragmentInter
 		super.onPause()
 		wifiP2pConnectionManager.receiveData(true)
 		unregisterReceiver(wifiP2pBroadcastReceiver)
+		wifiP2pManager.stopPeerDiscovery(wifiP2pChannel, null)
 	}
 
 
